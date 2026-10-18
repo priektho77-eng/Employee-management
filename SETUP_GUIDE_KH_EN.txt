@@ -1,0 +1,89 @@
+================================================================================
+📋 សៀវភៅណែនាំដំឡើង EMPLOYEE MANAGEMENT SYSTEM (GOOGLE SHEETS & APPS SCRIPT)
+================================================================================
+
+🔗 1. តំណភ្ជាប់ចែករំលែកគម្រោង (Shared Project Link):
+   https://ais-pre-kenaayh75l572edvoozd4p-202454413109.asia-southeast1.run.app
+
+   Development App URL:
+   https://ais-dev-kenaayh75l572edvoozd4p-202454413109.asia-southeast1.run.app
+
+--------------------------------------------------------------------------------
+📊 2. រចនាសម្ព័ន្ធតារាង Database ក្នុង Google Sheets:
+--------------------------------------------------------------------------------
+➔ Table 1: Department (ដេប៉ាតឺម៉ង់ / ផ្នែក)
+   - Field 1: DepartmentID   (លេខសម្គាល់ផ្នែក ឧ. DEP-001)
+   - Field 2: DepartmentName (ឈ្មោះផ្នែក ឧ. Information Technology)
+   - Field 3: Note           (ចំណាំ / ព័ត៌មានបន្ថែម)
+
+➔ Table 2: Employee (បុគ្គលិក)
+   - Field 1: EmployeeID     (លេខសម្គាល់បុគ្គលិក ឧ. EMP-1001)
+   - Field 2: Name           (ឈ្មោះបុគ្គលិក ឧ. Chen Sokha)
+   - Field 3: Gender         (ភេទ ឧ. Male, Female, Other)
+   - Field 4: Phone          (លេខទូរស័ព្ទ ឧ. 012 345 678)
+   - Field 5: Address        (អាសយដ្ឋាន ឧ. Phnom Penh, Cambodia)
+   - Field 6: DepartmentID   (លេខសម្គាល់ផ្នែកដែលបុគ្គលិកនោះបម្រើការងារ)
+
+--------------------------------------------------------------------------------
+⚙️ 3. ជំហានដំឡើង Google Sheets & Google Apps Script ជា Back-End:
+--------------------------------------------------------------------------------
+ជំហានទី ១:
+- ចូលទៅកាន់ https://sheets.new ដើម្បីបង្កើត Google Sheet ថ្មីមួយ។
+- ដាក់ឈ្មោះឯកសារ Google Sheet ឧ. "Employee Management Database"
+
+ជំហានទី ២:
+- នៅលើ Menu ខាងលើ ចុចលើ "Extensions" (ផ្នែកបន្ថែម) -> "Apps Script"
+
+ជំហានទី ៣:
+- លុបកូដដែលមានស្រាប់ក្នុងឯកសារ "Code.gs" ចេញ។
+- បើកឯកសារ "GoogleAppsScript_Code.txt" (មានក្នុងគម្រោងនេះ) រួចចម្លង (Copy) កូដទាំងអស់មកបិទភ្ជាប់ (Paste) ចូល។
+- ចុចរូបថាស Save (Ctrl + S)។
+
+ជំហានទី ៤: Deploy (ការដាក់ឱ្យដំណើរការ Web App):
+- ចុចលើប៊ូតុងពណ៌ខៀវ "Deploy" (ដាក់ឱ្យប្រើប្រាស់) នៅជ្រុងខាងលើស្តាំ -> ជ្រើសរើស "New deployment"
+- នៅត្រង់ប្រអប់ Select type (រូបស្ពឺកង់ Gear) ជ្រើសរើស "Web app"
+- បំពេញព័ត៌មានដូចខាងក្រោម៖
+  * Description: Employee Management API v1
+  * Execute as: Me (<your-email>@gmail.com)
+  * Who has access: Anyone (សំខាន់បំផុត! ត្រូវជ្រើសរើស Anyone ដើម្បីឱ្យ Frontend អាចហៅ API បាន)
+- ចុចប៊ូតុង "Deploy"
+
+ជំហានទី ៥: អនុញ្ញាតសិទ្ធិ (Authorization):
+- ចុចលើ "Authorize access"
+- ជ្រើសរើសគណនី Google របស់អ្នក
+- ចុច "Advanced" (កម្រិតខ្ពស់) នៅផ្នែកខាងក្រោមឆ្វេង
+- ចុច "Go to Employee Management (unsafe)"
+- ចុចប៊ូតុង "Allow"
+
+ជំហានទី ៦: យក URL មកប្រើក្នុង Web App:
+- Google នឹងបង្ហាញ "Web app URL" (មានទម្រង់: https://script.google.com/macros/s/AKfycb.../exec)
+- ចុច "Copy" យក URL នោះ
+- បើកកម្មវិធី Employee Management System
+- ចុចលើប៊ូតុង "Google Sheets Config" ឬ "Settings"
+- បិទភ្ជាប់ (Paste) URL នោះចូល រួចចុច "Connect & Sync Data" ជាការស្រេច!
+
+--------------------------------------------------------------------------------
+✨ 4. មុខងារចម្បងៗក្នុងកម្មវិធី (Key Features):
+--------------------------------------------------------------------------------
+1. គ្រប់គ្រងបុគ្គលិក (Employee Management):
+   - បង្កើតបុគ្គលិកថ្មី (Create) ជាមួយលេខសម្គាល់ស្វ័យប្រវត្តិ
+   - កែប្រែព័ត៌មានបុគ្គលិក (Update)
+   - លុបបុគ្គលិក (Delete) ដោយមានផ្ទាំងបញ្ជាក់ច្បាស់លាស់
+   - ស្វែងរកបុគ្គលិក (Search) តាមឈ្មោះ លេខកូដ ទូរស័ព្ទ និងចម្រាញ់តាមផ្នែក/ភេទ
+
+2. គ្រប់គ្រងផ្នែក (Department Management):
+   - បង្កើតផ្នែកថ្មី (Create)
+   - កែប្រែផ្នែក (Update)
+   - លុបផ្នែក (Delete)
+   - ស្វែងរកផ្នែក (Search)
+   - មើលស្ថិតិចំនួនបុគ្គលិកក្នុងផ្នែកនីមួយៗ (Department analytics)
+
+3. ប្រព័ន្ធទិន្នន័យបត់បែន (Dual-Engine Mode):
+   - ដំណើរការជាមួយ Google Apps Script Web App Live
+   - មាន Offline/Local Storage Mode ដំណើរការបានភ្លាមៗបើមិនទាន់បាន Deploy Google Sheet
+   - មុខងារ Export ទិន្នន័យជា CSV/Excel និង JSON Backup
+   - ប៊ូតុងចម្លង Code.gs និងទាញយក File Text បានដោយចុចតែម្តង។
+
+================================================================================
+🎉 រៀបចំរួចរាល់ដោយជោគជ័យ!
+================================================================================

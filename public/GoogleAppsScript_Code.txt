@@ -1,0 +1,304 @@
+/**
+ * ==============================================================================
+ * Google Apps Script Backend for Employee Management System
+ * ប្រើប្រាស់ Google Sheets ជា Database និង Google Apps Script ជា Web App API
+ * ==============================================================================
+ * 
+ * របៀបដំឡើង (Setup Instructions):
+ * 1. បង្កើត Google Sheet ថ្មីមួយនៅ https://sheets.new
+ * 2. ដាក់ឈ្មោះ Sheet តាមចិត្ត (ឧ. Employee Management DB)
+ * 3. ចុច Extensions > Apps Script (ផ្នែកបន្ថែម > Apps Script)
+ * 4. លុបកូដចាស់ៗចេញ រួចចម្លងកូដខាងក្រោមនេះទាំងស្រុងដាក់ចូល (Copy & Paste)
+ * 5. ចុចប៊ូតុង Save (រូបថាស Disk)
+ * 6. ចុច 'Deploy' (ដាក់ឱ្យប្រើប្រាស់) > 'New deployment' (ការដាក់ឱ្យប្រើប្រាស់ថ្មី)
+ * 7. ជ្រើសរើសប្រភេទ (Select type): 'Web app' (កម្មវិធីគេហទំព័រ)
+ * 8. កំណត់:
+ *    - Description: Employee Management API
+ *    - Execute as: Me (your email)
+ *    - Who has access: Anyone (អ្នកណាក៏ដោយ - សំខាន់ដើម្បីឱ្យ React App អាចទាញទិន្នន័យបាន)
+ * 9. ចុច Deploy > Authorize access (ផ្តល់សិទ្ធិ) > ជ្រើសរើស Google Account របស់អ្នក > Advanced > Go to Untitled (unsafe) > Allow
+ * 10. ចម្លងយក 'Web App URL' (ឧ. https://script.google.com/macros/s/.../exec)
+ * 11. យកមកបិទភ្ជាប់ (Paste) ក្នុងប្រអប់ Settings នៃកម្មវិធី Employee Management System!
+ * ==============================================================================
+ */
+
+// ឈ្មោះ Sheets ទាំងពីរ
+const SHEET_DEPARTMENT = 'Department';
+const SHEET_EMPLOYEE = 'Employee';
+
+// បឋមកថាជួរឈរ (Headers)
+const DEPARTMENT_HEADERS = ['DepartmentID', 'DepartmentName', 'Note'];
+const EMPLOYEE_HEADERS = ['EmployeeID', 'Name', 'Gender', 'Phone', 'Address', 'DepartmentID'];
+
+/**
+ * Helper ដើម្បីកំណត់ Headers និង Sheets ស្វ័យប្រវត្តិប្រសិនបើមិនទាន់មាន
+ */
+function getOrCreateSheet(sheetName, headers) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(headers);
+    // Format header row
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setBackground('#1e293b');
+    headerRange.setFontColor('#ffffff');
+    headerRange.setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+/**
+ * ទទួលសំណើ GET (Fetch all data, test ping, search)
+ */
+function doGet(e) {
+  try {
+    const action = e.parameter.action || 'getAll';
+    
+    // បង្កើត Sheets ប្រសិនបើមិនទាន់មាន
+    const deptSheet = getOrCreateSheet(SHEET_DEPARTMENT, DEPARTMENT_HEADERS);
+    const empSheet = getOrCreateSheet(SHEET_EMPLOYEE, EMPLOYEE_HEADERS);
+
+    if (action === 'ping') {
+      return jsonResponse({
+        success: true,
+        message: 'Google Apps Script API is active and connected!',
+        spreadsheetName: SpreadsheetApp.getActiveSpreadsheet().getName(),
+        spreadsheetId: SpreadsheetApp.getActiveSpreadsheet().getId(),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (action === 'getDepartments') {
+      const departments = readSheetData(deptSheet, DEPARTMENT_HEADERS);
+      return jsonResponse({ success: true, data: departments });
+    }
+
+    if (action === 'getEmployees') {
+      const employees = readSheetData(empSheet, EMPLOYEE_HEADERS);
+      return jsonResponse({ success: true, data: employees });
+    }
+
+    if (action === 'initSampleData') {
+      seedInitialData();
+      return jsonResponse({
+        success: true,
+        message: 'Sample data created successfully!'
+      });
+    }
+
+    // Default: Return both departments and employees
+    const departments = readSheetData(deptSheet, DEPARTMENT_HEADERS);
+    const employees = readSheetData(empSheet, EMPLOYEE_HEADERS);
+
+    return jsonResponse({
+      success: true,
+      departments: departments,
+      employees: employees,
+      spreadsheetName: SpreadsheetApp.getActiveSpreadsheet().getName()
+    });
+
+  } catch (error) {
+    return jsonResponse({ success: false, error: error.toString() });
+  }
+}
+
+/**
+ * ទទួលសំណើ POST (Create, Update, Delete)
+ */
+function doPost(e) {
+  try {
+    let payload = {};
+    if (e.postData && e.postData.contents) {
+      payload = JSON.parse(e.postData.contents);
+    } else if (e.parameter) {
+      payload = e.parameter;
+    }
+
+    const action = payload.action;
+    const deptSheet = getOrCreateSheet(SHEET_DEPARTMENT, DEPARTMENT_HEADERS);
+    const empSheet = getOrCreateSheet(SHEET_EMPLOYEE, EMPLOYEE_HEADERS);
+
+    // ==========================================
+    // DEPARTMENT CRUD
+    // ==========================================
+    if (action === 'createDepartment') {
+      const item = payload.data;
+      if (!item.DepartmentID || !item.DepartmentName) {
+        return jsonResponse({ success: false, error: 'DepartmentID and DepartmentName are required' });
+      }
+
+      // Check duplicate ID
+      const existing = findRowIndexById(deptSheet, 1, item.DepartmentID);
+      if (existing > -1) {
+        return jsonResponse({ success: false, error: 'DepartmentID already exists: ' + item.DepartmentID });
+      }
+
+      deptSheet.appendRow([item.DepartmentID, item.DepartmentName, item.Note || '']);
+      return jsonResponse({ success: true, message: 'Department created successfully', data: item });
+    }
+
+    if (action === 'updateDepartment') {
+      const item = payload.data;
+      const rowIndex = findRowIndexById(deptSheet, 1, item.DepartmentID);
+      if (rowIndex === -1) {
+        return jsonResponse({ success: false, error: 'Department not found: ' + item.DepartmentID });
+      }
+
+      deptSheet.getRange(rowIndex, 1, 1, 3).setValues([[item.DepartmentID, item.DepartmentName, item.Note || '']]);
+      return jsonResponse({ success: true, message: 'Department updated successfully', data: item });
+    }
+
+    if (action === 'deleteDepartment') {
+      const departmentId = payload.DepartmentID || (payload.data && payload.data.DepartmentID);
+      const rowIndex = findRowIndexById(deptSheet, 1, departmentId);
+      if (rowIndex === -1) {
+        return jsonResponse({ success: false, error: 'Department not found: ' + departmentId });
+      }
+
+      // Optional check: Warn if employee is using this department
+      const employees = readSheetData(empSheet, EMPLOYEE_HEADERS);
+      const hasEmployees = employees.some(emp => emp.DepartmentID === departmentId);
+      if (hasEmployees && !payload.force) {
+        return jsonResponse({
+          success: false,
+          error: 'Cannot delete: Employees are assigned to this department. Reassign them first or use force: true.'
+        });
+      }
+
+      deptSheet.deleteRow(rowIndex);
+      return jsonResponse({ success: true, message: 'Department deleted successfully', DepartmentID: departmentId });
+    }
+
+    // ==========================================
+    // EMPLOYEE CRUD
+    // ==========================================
+    if (action === 'createEmployee') {
+      const item = payload.data;
+      if (!item.EmployeeID || !item.Name) {
+        return jsonResponse({ success: false, error: 'EmployeeID and Name are required' });
+      }
+
+      // Check duplicate EmployeeID
+      const existing = findRowIndexById(empSheet, 1, item.EmployeeID);
+      if (existing > -1) {
+        return jsonResponse({ success: false, error: 'EmployeeID already exists: ' + item.EmployeeID });
+      }
+
+      empSheet.appendRow([
+        item.EmployeeID,
+        item.Name,
+        item.Gender || '',
+        item.Phone || '',
+        item.Address || '',
+        item.DepartmentID || ''
+      ]);
+      return jsonResponse({ success: true, message: 'Employee created successfully', data: item });
+    }
+
+    if (action === 'updateEmployee') {
+      const item = payload.data;
+      const rowIndex = findRowIndexById(empSheet, 1, item.EmployeeID);
+      if (rowIndex === -1) {
+        return jsonResponse({ success: false, error: 'Employee not found: ' + item.EmployeeID });
+      }
+
+      empSheet.getRange(rowIndex, 1, 1, 6).setValues([[
+        item.EmployeeID,
+        item.Name,
+        item.Gender || '',
+        item.Phone || '',
+        item.Address || '',
+        item.DepartmentID || ''
+      ]]);
+      return jsonResponse({ success: true, message: 'Employee updated successfully', data: item });
+    }
+
+    if (action === 'deleteEmployee') {
+      const employeeId = payload.EmployeeID || (payload.data && payload.data.EmployeeID);
+      const rowIndex = findRowIndexById(empSheet, 1, employeeId);
+      if (rowIndex === -1) {
+        return jsonResponse({ success: false, error: 'Employee not found: ' + employeeId });
+      }
+
+      empSheet.deleteRow(rowIndex);
+      return jsonResponse({ success: true, message: 'Employee deleted successfully', EmployeeID: employeeId });
+    }
+
+    if (action === 'initSampleData') {
+      seedInitialData();
+      return jsonResponse({ success: true, message: 'Sample data created successfully!' });
+    }
+
+    return jsonResponse({ success: false, error: 'Invalid action: ' + action });
+
+  } catch (error) {
+    return jsonResponse({ success: false, error: error.toString() });
+  }
+}
+
+/**
+ * អានទិន្នន័យពី Sheet ជារាង Array of Objects
+ */
+function readSheetData(sheet, headers) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow <= 1) return [];
+
+  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  return values.map(row => {
+    const obj = {};
+    headers.forEach((header, idx) => {
+      obj[header] = row[idx] !== undefined && row[idx] !== null ? String(row[idx]) : '';
+    });
+    return obj;
+  });
+}
+
+/**
+ * ស្វែងរក Row Index តាមរយៈ ID (Column 1)
+ */
+function findRowIndexById(sheet, idColIndex, idValue) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return -1;
+  const ids = sheet.getRange(2, idColIndex, lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]).trim() === String(idValue).trim()) {
+      return i + 2; // +2 for 1-based index and header row
+    }
+  }
+  return -1;
+}
+
+/**
+ * បញ្ចូលទិន្នន័យគំរូដំបូង (Initial Seed Data)
+ */
+function seedInitialData() {
+  const deptSheet = getOrCreateSheet(SHEET_DEPARTMENT, DEPARTMENT_HEADERS);
+  const empSheet = getOrCreateSheet(SHEET_EMPLOYEE, EMPLOYEE_HEADERS);
+
+  if (deptSheet.getLastRow() <= 1) {
+    deptSheet.appendRow(['DEP-001', 'Information Technology', 'Software & System Infrastructure']);
+    deptSheet.appendRow(['DEP-002', 'Human Resources', 'Recruitment, Talent & Culture']);
+    deptSheet.appendRow(['DEP-003', 'Accounting & Finance', 'Budgeting, Payroll & Financial Reporting']);
+    deptSheet.appendRow(['DEP-004', 'Sales & Marketing', 'Brand Growth & Client Relations']);
+    deptSheet.appendRow(['DEP-005', 'Operations', 'Daily Facilities & Logistics']);
+  }
+
+  if (empSheet.getLastRow() <= 1) {
+    empSheet.appendRow(['EMP-1001', 'Chen Sokha', 'Male', '012 345 678', 'Phnom Penh, Cambodia', 'DEP-001']);
+    empSheet.appendRow(['EMP-1002', 'Pich Bopha', 'Female', '098 765 432', 'Siem Reap, Cambodia', 'DEP-002']);
+    empSheet.appendRow(['EMP-1003', 'Meas Vireak', 'Male', '088 112 233', 'Battambang, Cambodia', 'DEP-001']);
+    empSheet.appendRow(['EMP-1004', 'Som Chanthy', 'Female', '077 556 677', 'Kandal, Cambodia', 'DEP-003']);
+    empSheet.appendRow(['EMP-1005', 'Keo Sovann', 'Male', '092 334 455', 'Phnom Penh, Cambodia', 'DEP-004']);
+  }
+}
+
+/**
+ * បម្លែងជា JSON Response ដែលមាន CORS Header
+ */
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}

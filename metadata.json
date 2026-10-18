@@ -1,0 +1,8 @@
+{
+  "name": "Employee Management System",
+  "description": "Employee and Department Management System powered by Google Sheets database and Google Apps Script backend with full CRUD, search, and export capabilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
