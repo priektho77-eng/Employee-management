@@ -17,7 +17,7 @@ import {
   INITIAL_EMPLOYEES,
 } from './services/storage';
 import { pingGasApi, fetchAllFromGas, postToGas } from './services/gasApi';
-import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { EmployeeTable } from './components/EmployeeTable';
 import { DepartmentTable } from './components/DepartmentTable';
 import { AnalyticsView } from './components/AnalyticsView';
@@ -325,9 +325,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Kantumruy_Pro','Plus_Jakarta_Sans',sans-serif]">
-      {/* Header */}
-      <Header
+    <div className="min-h-screen bg-slate-100/70 flex flex-col md:flex-row font-['Kantumruy_Pro','Plus_Jakarta_Sans',sans-serif]">
+      {/* Left Sidebar Navbar */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         connection={connection}
@@ -339,8 +339,55 @@ export default function App() {
         totalDepartments={departments.length}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main Workspace on Right */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Workspace Top Header Bar on desktop */}
+        <div className="hidden md:flex bg-white border-b border-slate-200/80 px-6 lg:px-8 py-3.5 items-center justify-between sticky top-0 z-20 shadow-2xs">
+          <div className="flex items-center space-x-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">
+                {activeTab === 'employees' && 'គ្រប់គ្រងបុគ្គលិក (Employee Management)'}
+                {activeTab === 'departments' && 'គ្រប់គ្រងផ្នែក (Department Management)'}
+                {activeTab === 'analytics' && 'ទិដ្ឋភាពទូទៅ & ស្ថិតិ (Overview & Analytics)'}
+                {activeTab === 'script-setup' && 'ការរៀបចំ Google Sheets & Code.gs (Database Setup)'}
+              </h2>
+              <p className="text-xs text-slate-500">
+                Google Sheets Database &bull; Tables: Department &amp; Employee
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {/* Quick status pill */}
+            <div
+              onClick={() => setIsAppsScriptModalOpen(true)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition hover:opacity-80 ${
+                connection.isConnected
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  connection.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                }`}
+              />
+              <span>{connection.isConnected ? 'Google Sheets Live' : 'Local Emulated Mode'}</span>
+            </div>
+
+            {/* Share project button */}
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-sm transition transform active:scale-95"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share Link</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Banner with Quick Share Link */}
         <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white shadow-md border border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3.5">
@@ -543,6 +590,7 @@ export default function App() {
           </div>
         </div>
       </footer>
+    </div>
 
       {/* Modals */}
       <EmployeeModal
